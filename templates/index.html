@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Epidemic Prediction System</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+</head>
+
+
+<body>
+
+<header class="hero">
+
+<div class="hero__content">
+
+<p class="badge">Data-Driven Public Health Tool</p>
+
+<h1>Epidemic Prediction System</h1>
+
+<p class="hero__subtitle">
+Predict outbreak risk for <strong>dengue</strong> and <strong>malaria</strong>
+using environmental indicators.
+</p>
+
+<a href="#predict" class="btn btn--primary">Start Prediction</a>
+
+</div>
+
+</header>
+
+
+
+<main class="container">
+
+
+<section class="grid grid--three">
+
+<article class="card">
+<i class="fa-solid fa-bullseye card-icon"></i>
+<h2>Objective</h2>
+<p>Enable early warnings so health teams can allocate resources and reduce outbreak impact.</p>
+</article>
+
+
+<article class="card">
+<i class="fa-solid fa-chart-line card-icon"></i>
+<h2>What We Analyze</h2>
+<ul>
+<li>Temperature</li>
+<li>Rainfall</li>
+<li>Humidity</li>
+<li>Monthly disease cases</li>
+</ul>
+</article>
+
+
+<article class="card">
+<i class="fa-solid fa-triangle-exclamation card-icon"></i>
+<h2>Prediction Output</h2>
+<ul>
+<li>Outbreak probability</li>
+<li>Risk level</li>
+<li>Early warning message</li>
+</ul>
+</article>
+
+</section>
+
+
+
+<section id="predict" class="panel">
+
+<div class="panel__head">
+<h2>Local Area Risk Estimation</h2>
+</div>
+
+
+<form id="prediction-form" class="form-grid">
+
+<label>
+Disease
+<select name="disease">
+{% for disease in diseases %}
+<option value="{{ disease }}">{{ disease|capitalize }}</option>
+{% endfor %}
+</select>
+</label>
+
+
+<label>
+Month (1-12)
+<input type="number" name="month" min="1" max="12" required>
+</label>
+
+
+<label>
+Temperature
+<input type="number" name="temperature" required>
+</label>
+
+
+<label>
+Rainfall
+<input type="number" name="rainfall" required>
+</label>
+
+
+<label>
+Humidity
+<input type="number" name="humidity" required>
+</label>
+
+
+<label>
+Cases
+<input type="number" name="cases" required>
+</label>
+
+
+<button type="submit" class="btn btn--primary">
+Predict Outbreak Risk
+</button>
+
+</form>
+
+
+
+<section id="result" class="result hidden">
+
+<h3>Prediction Result</h3>
+
+<p>Outbreak Probability: <strong id="prob"></strong></p>
+
+<p>Risk Level: <strong id="risk"></strong></p>
+
+<p id="message"></p>
+
+<p id="alert" class="pill"></p>
+
+</section>
+
+</section>
+
+
+
+<section class="panel">
+
+<h2>Outbreak Trend Visualization</h2>
+
+<div id="outbreakChart" style="height:400px;"></div>
+
+</section>
+
+
+</main>
+
+
+
+<footer>
+
+<p>© 2026 Epidemic Prediction System | Mini Project</p>
+
+</footer>
+
+
+
+<script>
+
+const form = document.getElementById("prediction-form");
+const result = document.getElementById("result");
+
+form.addEventListener("submit", async (e) => {
+
+e.preventDefault();
+
+const payload = Object.fromEntries(new FormData(form).entries());
+
+const response = await fetch("/predict", {
+method: "POST",
+headers: {"Content-Type": "application/json"},
+body: JSON.stringify(payload)
+});
+
+const data = await response.json();
+
+document.getElementById("prob").textContent =
+data.outbreak_probability + "%";
+
+document.getElementById("risk").textContent =
+data.risk_level;
+
+document.getElementById("message").textContent =
+data.message;
+
+const alert = document.getElementById("alert");
+
+alert.className =
+"pill " + (data.alert ? "pill--alert" : "pill--safe");
+
+alert.textContent =
+data.alert ? "⚠️ Early Warning Active"
+: "✅ No Immediate Alert";
+
+result.classList.remove("hidden");
+
+});
+
+
+// Load Plotly chart
+async function loadChart(){
+
+const response = await fetch("/chart-data");
+const data = await response.json();
+
+const trace1 = {
+x: data.months,
+y: data.dengue,
+mode: 'lines+markers',
+name: 'Dengue Cases'
+};
+
+const trace2 = {
+x: data.months,
+y: data.malaria,
+mode: 'lines+markers',
+name: 'Malaria Cases'
+};
+
+const layout = {
+title: "Monthly Epidemic Trends",
+xaxis:{title:"Month"},
+yaxis:{title:"Cases"}
+};
+
+Plotly.newPlot("outbreakChart",[trace1,trace2],layout);
+
+}
+
+loadChart();
+
+</script>
+
+</body>
+</html>
